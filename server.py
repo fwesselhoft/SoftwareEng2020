@@ -1,54 +1,36 @@
 import socket
-import pickle
+import _pickle as pickle
 import time
+import random
 from _thread import *
+from helper_classes import Card
 
+# setup sockets
+S = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+S.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-class Hand():
-    def __init__(self):
-        self.cards = []
-
-
-class NotePad():
-    def __init__(self):
-        pass
-
-
-class Player():
-    def __init__(self, identifier, suspect):
-        self.suspect = suspect
-        self.notes = NotePad()
-        self.hand = Hand()
-        self.identifier = identifier
-
-    def add_card_to_hand(card):
-        pass
-
-    def get_identifier(self):
-        return self.identifier
-
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+# Set constants
 PORT = 5555
+
 HOST_NAME = socket.gethostname()
 SERVER_IP = socket.gethostbyname(HOST_NAME)
 
-
-# Attempt to start server
+# try to connect to server
 try:
-    s.bind((SERVER_IP, PORT))
+    S.bind((SERVER_IP, PORT))
 except socket.error as e:
     print(str(e))
-    print("Server could not start...")
+    print("[SERVER] Server could not start")
     quit()
 
+S.listen()  # listen for connections
 
-# Listen for connections to the server
-s.listen(6)
+print(f"[SERVER] Server Started with local IP {SERVER_IP}")
 
-# Message to show server started
-print(f"Server started with local IP {SERVER_IP}")
+players = []
+connections = 0
+_id = 0
+current_player_index = 0
 
 suspects = {
     "0": "Miss Scarlet",
@@ -59,55 +41,158 @@ suspects = {
     "5": "Mrs. Peacock"
 }
 
-players = []
-# Number of connections that have been made to the server, i.e. number of clients that have
-# connected
-connections = 0
-# ID of client that connected
-_id = 0
+suspect_cards = [Card("Mr. Green"), Card("Mrs. White"), Card("Col. Mustard"),
+                 Card("Miss Scarlet"), Card("Prof. Plum"), Card("Mrs. Peacock")]
+
+weapon_cards = [Card("Rope"), Card("Lead Pipe"), Card("Revolver"),
+                Card("Candlestick"), Card("Wrench"), Card("Knife")]
+
+room_cards = [Card("Study"), Card("Hall"), Card("Lounge"), Card("Dining Room"), Card("Kitchen"),
+              Card("Ballroom"), Card("Billiard Room"), Card("Conservatory"), Card("Library")]
 
 
-def threaded_client(connection, _id):
-    global players, connections, suspects
-    # Anything printed here appears on server screen
+def broadcast():
+    pass
 
-    reply = ""
+
+def shuffle_cards(deck):
+    random.shuffle(deck)
+
+
+def get_random_winning_cards(suspect_cards, weapon_cards, room_cards):
+    """
+    Get three cards to be the set of winning cards to end the game.
+    winning_cards[0] is the character to win
+    winning_cards[1] is the weapon to win
+    winning_cards[2] is the room to win
+    """
+    num_of_suspect_cards = len(suspect_cards) - 1
+    num_of_weapon_cards = len(weapon_cards) - 1
+    num_of_room_cards = len(room_cards) - 1
+    winning_cards = (suspect_cards[random.randint(
+        0, num_of_suspect_cards)], weapon_cards[random.randint(0, num_of_weapon_cards)], room_cards[random.randint(0, num_of_room_cards)])
+    suspect_cards.remove(winning_cards[0])
+    weapon_cards.remove(winning_cards[1])
+    room_cards.remove(winning_cards[2])
+    return winning_cards
+
+
+def combine_decks_into_one(room_cards, weapon_cards, suspect_cards):
+    combined_deck = []
+    for card in room_cards:
+        combined_deck.append(card)
+    for card in weapon_cards:
+        combined_deck.append(card)
+    for card in suspect_cards:
+        combined_deck.append(card)
+    return combined_deck
+
+
+def setup_game():
+    """
+    Perform initial card setup, that includes shuffing each dech respectively, 
+    choosing one card from each deck as the game winning card, recombining all the 
+    cards and re-shuffling the cards
+    """
+    shuffle_cards(room_cards)
+    shuffle_cards(weapon_cards)
+    shuffle_cards(suspect_cards)
+    winning_cards = get_random_winning_cards(
+        room_cards, weapon_cards, suspect_cards)
+    print("The suspect winning card is", winning_cards[2].get_card_value())
+    print("The weapon winning card is", winning_cards[1].get_card_value())
+    print("The room winning card is", winning_cards[0].get_card_value())
+    combined_deck = combine_decks_into_one(
+        room_cards, weapon_cards, suspect_cards)
+    shuffle_cards(combined_deck)
+    print("Done setting game up...")
+    return winning_cards
+    # pass_out_cards(combined_deck)
+
+
+def threaded_client(conn, _id):
+    """
+    runs in a new thread for each player connected to the server
+    :param con: IP address of connection
+    :param _id: int
+    :return: None
+    """
+    global connections, players, current_player_index, winning_cards
+
     current_id = _id
 
-    # 1 receive client name on server
-    data = connection.recv(48)
+    # recieve the name of the client
+    data = conn.recv(16)
     name = data.decode("utf-8")
-    print(name, "connected to the server.")
+    print("[LOG]", name, "connected to the server.")
 
-    # 2 send suspects data to client
-    suspects_data = pickle.dumps(suspects)
-    connection.send(suspects_data)
+    players.append((suspects[str(current_id)], name))
 
-    # 3 receive suspect choice from client
-    # suspect_choice contains int representing suspect player chose
-    suspect_choice = connection.recv(2048).decode()
+    # send initial info to clients
+    conn.send(str.encode(str(current_id)))
 
-    players.append(Player((connection, _id), suspect_choice))
+    while True:
+        try:
+            data = conn.recv(32)
 
-    # remove that suspect from player options, so other players may choose from
-    # remaining suspects
-    suspects.pop(suspect_choice, None)
+            if not data:
+                break
 
-    while len(players) < 3:
-        for player in players:
-            player.get_identifier()[0].send(str.encode("INITIALIZING"))
-        time.sleep(5)
+            data = data.decode("utf-8")
 
-    print("Client has left.")
+            if data == "get":
+                send_data = pickle.dumps(
+                    (players, current_player_index))
+
+            if data == "next":
+                # Adjust next to account for removed players which are defaulted to None
+                if current_player_index == len(players) - 1:
+                    current_player_index = 0
+                else:
+                    current_player_index += 1
+                send_data = str.encode(str(current_player_index))
+
+            if data == "accuse":
+                send_data = pickle.dumps(winning_cards)
+
+            else:
+                send_data = pickle.dumps(
+                    (players, current_player_index))
+
+            conn.send(send_data)
+
+        except Exception as e:
+            print(e)
+            break  # if an exception has been reached disconnect client
+
+        time.sleep(0.001)
+
+    # When user disconnects
+    print("[DISCONNECT] Name:", name,
+          ", Client Id:", current_id, "disconnected")
+
     connections -= 1
-    print("Connections:", connections)
-    print("current_id:", current_id)
-    # disconnect client from server
-    connection.close()
+    players[current_id] = None
+    # del players[current_id]  # remove client information from players list
+    conn.close()  # close connection
 
 
+# winning_cards[0] is the room
+# winning_cards[1] is the weapon
+# winning_cards[2] is the suspect
+winning_cards = setup_game()
+print("[SERVER] Waiting for connections")
+
+# Keep looping to accept new connections
 while True:
-    host, _id = s.accept()
+
+    host, addr = S.accept()
+    print("[CONNECTION] Connected to:", addr)
+
+    # increment connections start new thread then increment ids
     connections += 1
-    print(start_new_thread(threaded_client, (host, _id)))
-    print(f"{_id} has connected to the server.")
+    start_new_thread(threaded_client, (host, _id))
+    _id += 1
+
+# when program ends
+print("[SERVER] Server offline")
