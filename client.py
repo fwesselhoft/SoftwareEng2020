@@ -1,68 +1,55 @@
 import socket
-import pickle
-import time
+import _pickle as pickle
 
 
-class Client():
+class Network:
     """
-    Class to connect, send, and receive information from the client to the server
+    class to connect, send and recieve information from the server
+    need to hardcode the host attirbute to be the server's ip
     """
 
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.host = ""  # Enter IP address of your local network here as a String
+        self.host = ""  # enter IP address of your local network here as String, or the aws IP
         self.port = 5555
-        self.address = (self.host, self.port)
+        self.addr = (self.host, self.port)
 
-    def connect_to_server(self, name):
+    def connect(self, name):
         """
-        Connects to server and returns the name of the client that connected
-        :param name: A string representing the name of the client being connected
-        :return: The name of the client
+        connects to server and returns the id of the client that connected
+        :param name: str
+        :return: int reprsenting id
         """
-        # Anyting printed here appears on client screen
-        self.client.connect(self.address)
-        # 1 send client name to server
+        self.client.connect(self.addr)
         self.client.send(str.encode(name))
+        val = self.client.recv(8)
+        return int(val.decode())
 
-        # 2 receive suspects data from server
-        suspects_list = pickle.loads(self.client.recv(2048))
-        print(suspects_list)
-        print("Choose one of the suspects by entering the number next to their name.")
-
-        # 3 send suspects choice to server
-        # assuming the user will enter the correct information for now so avoiding error handling
-        suspect_choice = input("Suspect choice: ")
-        self.client.send(str.encode(suspect_choice))
-
-        return name
-
-    def join_waiting_lobby(self, gamestate):
+    def disconnect(self):
         """
-        Joins the waiting lobby of the game until there are enough players present
-        :param gamestate: A string representing the current gamestate
-        """
-        print("Currently in lobby waiting for enough players to join...")
-        while gamestate == "INITIALIZING":
-            gamestate = self.client.recv(2048).decode("utf-8")
-        print("The game has started, goodluck!")
-
-    def disconnect_from_server(self):
-        """
-        Disconnects from the server
+        disconnects from the server
         :return: None
         """
         self.client.close()
 
-    def send_data_to_server(self, data):
+    def send(self, data, pick=False):
         """
-        Sends information from client to server
-        :param data: A string representing the data to be sent to the server
-        :return: A string that is a reply from the server that the data was received
+        sends information to the server
+        :param data: str
+        :param pick: boolean if should pickle or not
+        :return: str
         """
         try:
-            self.client.send(str.encode(data))
-            reply = self.client.recv(2048 * 4)
+            if pick:
+                self.client.send(pickle.dumps(data))
+            else:
+                self.client.send(str.encode(data))
+            reply = self.client.recv(2048*4)
+            try:
+                reply = pickle.loads(reply)
+            except Exception as e:
+                print(e)
+
             return reply
         except socket.error as e:
             print(e)
