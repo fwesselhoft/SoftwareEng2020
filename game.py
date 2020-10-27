@@ -61,7 +61,7 @@ def handle_accusation(winning_cards):
 
 def check_if_winner(current_player_index):
     number_of_nones = 0
-    for i in range(0, current_player_index + 1):
+    for i in range(len(players)):
         if players[i] == None and i != current_player_index:
             number_of_nones += 1
     if number_of_nones == 2:
