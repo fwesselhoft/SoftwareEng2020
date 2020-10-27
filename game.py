@@ -105,6 +105,7 @@ def main(name):
                     print("Your accusation is correct. You win!")
                 else:
                     print("Your accusation was incorrect. Sorry you're out!")
+                    run = False
             elif choice == "2":
                 # Handle Suggestion
                 print("You made a suggestion.")
