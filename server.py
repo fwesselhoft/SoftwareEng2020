@@ -25,8 +25,6 @@ except socket.error as e:
 
 S.listen()  # listen for connections
 
-print(f"[SERVER] Server Started with local IP {SERVER_IP}")
-
 players = []
 connections = 0
 _id = 0
@@ -105,7 +103,6 @@ def setup_game():
     combined_deck = combine_decks_into_one(
         room_cards, weapon_cards, suspect_cards)
     shuffle_cards(combined_deck)
-    print("Done setting game up...")
     return winning_cards
     # pass_out_cards(combined_deck)
 
@@ -146,10 +143,26 @@ def threaded_client(conn, _id):
 
             if data == "next":
                 # Adjust next to account for removed players which are defaulted to None
-                if current_player_index == len(players) - 1:
+                # if current_player_index == len(players) - 1:
+                #     current_player_index = 0
+                # else:
+                #     current_player_index += 1
+
+                current_player_index += 1
+                if current_player_index >= len(players):
                     current_player_index = 0
+                    if players[current_player_index] == None:
+                        while players[current_player_index] == None:
+                            current_player_index += 1
+                            if current_player_index >= len(players):
+                                current_player_index = 0
+                elif players[current_player_index] != None:
+                    current_player_index = current_player_index
                 else:
-                    current_player_index += 1
+                    while players[current_player_index] == None:
+                        current_player_index += 1
+                        if current_player_index >= len(players):
+                            current_player_index = 0
                 send_data = str.encode(str(current_player_index))
 
             if data == "accuse":
@@ -187,7 +200,6 @@ print("[SERVER] Waiting for connections")
 while True:
 
     host, addr = S.accept()
-    print("[CONNECTION] Connected to:", addr)
 
     # increment connections start new thread then increment ids
     connections += 1
