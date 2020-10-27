@@ -59,6 +59,17 @@ def handle_accusation(winning_cards):
         return False
 
 
+def check_if_winner(current_player_index):
+    number_of_nones = 0
+    for i in range(0, current_player_index + 1):
+        if players[i] == None and i != current_player_index:
+            number_of_nones += 1
+    if number_of_nones == 2:
+        return True
+    else:
+        return False
+
+
 def main(name):
     """
     function for running the game,
@@ -86,6 +97,10 @@ def main(name):
 
         # Perform some action when it is the player's turn
         if player == players[current_player_index]:
+            if check_if_winner(current_player_index):
+                print(
+                    "You are the winner by default since everyone else made an incorrect accusation or left the game. Congrats!")
+                break
             print("It is your turn")
             print("What would you like to do? ")
             print("1 : Make an Accusation")
@@ -122,6 +137,7 @@ def main(name):
         else:  # Not player's turn: Can listen to results from other players' turns here?
             # Since this area is for players whose turn it isn't, we can listen for the
             # results from accusations and such to send to all players
+            # accusation_result = server.send("accusation result")
             time.sleep(0.1)
     server.disconnect()
     quit()
