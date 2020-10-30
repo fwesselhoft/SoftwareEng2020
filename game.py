@@ -70,6 +70,18 @@ def check_if_winner(current_player_index):
         return False
 
 
+def turn_options():
+    print("It is your turn")
+    print("What would you like to do? ")
+    print("1 : Make an Accusation")
+    print("2 : Make an Suggestion")
+    print("3 : Move")
+    print("4 : End your turn")
+    print("5 : Exit Game")
+    choice = input("Please select a choice: ")
+    return choice
+
+
 def main(name):
     """
     function for running the game,
@@ -85,13 +97,18 @@ def main(name):
     players, current_player_index = server.send("get")
     player = players[current_id]
 
+    # players wait until there are at least 3 people connected to the server
+    while len(players) < 3:
+        players, current_player_index = server.send("get")
+        time.sleep(0.1)
+
+    # pass out cards to players
+    players, current_player_index = server.send("pass out cards")
+
+    players[current_id].display_cards()
+
     run = True
     while run:
-        # Players wait until there are at least 3 people connected to the server
-        while len(players) < 3:
-            players, current_player_index = server.send("get")
-            time.sleep(0.1)
-
         # Get updated players list and who's turn it is from server
         players, current_player_index = server.send("get")
 
@@ -101,16 +118,9 @@ def main(name):
                 print(
                     "You are the winner by default since everyone else made an incorrect accusation or left the game. Congrats!")
                 break
-            print("It is your turn")
-            print("What would you like to do? ")
-            print("1 : Make an Accusation")
-            print("2 : Make an Suggestion")
-            print("3 : Move")
-            print("4 : End your turn")
             # When exiting, must be careful with players length since del players[current_id]
             # is called and players since changes so it throws an index out of bounds error
-            print("5 : Exit Game")
-            choice = input("Please select a choice: ")
+            choice = turn_options()
             if choice == "1":
                 # Handle Accusation
                 winning_cards = server.send("accuse")
@@ -138,6 +148,7 @@ def main(name):
             # Since this area is for players whose turn it isn't, we can listen for the
             # results from accusations and such to send to all players
             # accusation_result = server.send("accusation result")
+            # print("It is currently another player's turn.")
             time.sleep(0.1)
     server.disconnect()
     quit()
