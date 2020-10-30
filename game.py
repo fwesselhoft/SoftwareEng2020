@@ -1,5 +1,5 @@
-from client import Network
-from helper_classes import Card
+from client import Client
+from helper_classes import Card, GameBoard
 import time
 
 # DISCLAIMER: This is a super quick and dirty implementation simply to
@@ -92,25 +92,30 @@ def main(name):
     global players
 
     # start by connecting to the network
-    server = Network()
-    current_id = server.connect(name)
-    players, current_player_index = server.send("get")
+    client = Client()
+    current_id = client.connect(name)
+    players, current_player_index = client.send("get")
     player = players[current_id]
+
+    print(f"My player is {player.identifier[0]} and {player.identifier[1]}")
+    print(f"My player's position is: {player.get_position()}")
 
     # players wait until there are at least 3 people connected to the server
     while len(players) < 3:
-        players, current_player_index = server.send("get")
+        players, current_player_index = client.send("get")
         time.sleep(0.1)
 
     # pass out cards to players
-    players, current_player_index = server.send("pass out cards")
+    players, current_player_index = client.send("pass out cards")
 
     players[current_id].display_cards()
+
+    game_board = GameBoard(player, players)
 
     run = True
     while run:
         # Get updated players list and who's turn it is from server
-        players, current_player_index = server.send("get")
+        players, current_player_index = client.send("get")
 
         # Perform some action when it is the player's turn
         if player == players[current_player_index]:
@@ -121,9 +126,13 @@ def main(name):
             # When exiting, must be careful with players length since del players[current_id]
             # is called and players since changes so it throws an index out of bounds error
             choice = turn_options()
+            # Print locations to move to on player's turn
+            print(
+                f"Choose a location to move to: {game_board.get_next_position_options()}")
+
             if choice == "1":
                 # Handle Accusation
-                winning_cards = server.send("accuse")
+                winning_cards = client.send("accuse")
                 # print(f"winning_cards sent from server: {winning_cards}")
                 result = handle_accusation(winning_cards)
                 if result:
@@ -143,14 +152,14 @@ def main(name):
                 run = False
             # Get index of current player
             print("Your turn is now over.")
-            server.send("next")
+            client.send("next")
         else:  # Not player's turn: Can listen to results from other players' turns here?
             # Since this area is for players whose turn it isn't, we can listen for the
             # results from accusations and such to send to all players
-            # accusation_result = server.send("accusation result")
+            # accusation_result = client.send("accusation result")
             # print("It is currently another player's turn.")
             time.sleep(0.1)
-    server.disconnect()
+    client.disconnect()
     quit()
 
 
