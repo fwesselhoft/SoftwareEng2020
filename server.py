@@ -3,7 +3,7 @@ import _pickle as pickle
 import time
 import random
 from _thread import *
-from helper_classes import Card
+from helper_classes import Card, Player
 
 # setup sockets
 S = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,6 +48,8 @@ weapon_cards = [Card("Rope"), Card("Lead Pipe"), Card("Revolver"),
 room_cards = [Card("Study"), Card("Hall"), Card("Lounge"), Card("Dining Room"), Card("Kitchen"),
               Card("Ballroom"), Card("Billiard Room"), Card("Conservatory"), Card("Library")]
 
+turn_status = ""
+
 
 def broadcast():
     pass
@@ -86,6 +88,19 @@ def combine_decks_into_one(room_cards, weapon_cards, suspect_cards):
     return combined_deck
 
 
+def pass_out_cards(combined_deck):
+    """
+    Pass out remaining cards to the players after picking 3 out as winning cards.
+    """
+    current = 0
+    while len(combined_deck) != 0:
+        if current > len(players) - 1:
+            current = 0
+        players[current].add_card(combined_deck[0])
+        del combined_deck[0]
+        current += 1
+
+
 def setup_game():
     """
     Perform initial card setup, that includes shuffing each dech respectively, 
@@ -103,8 +118,7 @@ def setup_game():
     combined_deck = combine_decks_into_one(
         room_cards, weapon_cards, suspect_cards)
     shuffle_cards(combined_deck)
-    return winning_cards
-    # pass_out_cards(combined_deck)
+    return winning_cards, combined_deck
 
 
 def threaded_client(conn, _id):
@@ -114,7 +128,7 @@ def threaded_client(conn, _id):
     :param _id: int
     :return: None
     """
-    global connections, players, current_player_index, winning_cards
+    global connections, players, current_player_index, winning_cards, turn_status
 
     current_id = _id
 
@@ -122,8 +136,8 @@ def threaded_client(conn, _id):
     data = conn.recv(16)
     name = data.decode("utf-8")
     print("[LOG]", name, "connected to the server.")
-
-    players.append((suspects[str(current_id)], name))
+    player_data = (suspects[str(current_id)], name)
+    players.append(Player(player_data))
 
     # send initial info to clients
     conn.send(str.encode(str(current_id)))
@@ -165,9 +179,16 @@ def threaded_client(conn, _id):
                             current_player_index = 0
                 send_data = str.encode(str(current_player_index))
 
+            # if data == "accusation result":
+            #     send_data = str.encode(
+            #         "This is the accusation result from the other player")
+
+            if data == "pass out cards":
+                pass_out_cards(combined_deck)
+                send_data = pickle.dumps((players, current_player_index))
+
             if data == "accuse":
                 send_data = pickle.dumps(winning_cards)
-
             else:
                 send_data = pickle.dumps(
                     (players, current_player_index))
@@ -193,7 +214,7 @@ def threaded_client(conn, _id):
 # winning_cards[0] is the room
 # winning_cards[1] is the weapon
 # winning_cards[2] is the suspect
-winning_cards = setup_game()
+winning_cards, combined_deck = setup_game()
 print("[SERVER] Waiting for connections")
 
 # Keep looping to accept new connections
