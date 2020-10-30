@@ -2,7 +2,7 @@ import socket
 import _pickle as pickle
 
 
-class Network:
+class Client:
     """
     class to connect, send and recieve information from the server
     need to hardcode the host attirbute to be the server's ip
@@ -10,7 +10,8 @@ class Network:
 
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.host = ""  # enter IP address of your local network here as String, or the aws IP
+        # enter IP address of your local network here as String, or the aws IP
+        self.host = "192.168.86.228"
         self.port = 5555
         self.addr = (self.host, self.port)
 
