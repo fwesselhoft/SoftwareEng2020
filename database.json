@@ -1,0 +1,28 @@
+{
+        "authorized_Players": [{
+                        "name": "rem",
+                        "password": "rem123"
+                },
+                {
+                        "name": "nayila",
+                        "passrord": "nayila123"
+                },
+                {
+                        "name": "jonathan",
+                        "password": "jonathan123"
+                },
+                {
+                        "name": "anthony",
+                        "password": "anthony123"
+                },
+                {
+                        "name": "fritz",
+                        "password": "fritz123"
+                },
+                {
+                        "name": "tester",
+                        "password": "tester123"
+                }
+
+        ]
+}
