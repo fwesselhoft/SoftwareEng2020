@@ -45,6 +45,11 @@ locations = gameboard.get_locations()
 
 
 def make_accusation():
+    """
+    Provide choices to player to make accusation
+    Returns:
+        A JSON string that represents the player's accusation.
+    """
     # print(accusation_suspect)
     numbers_of_suspects = list(accusation_suspect.keys())
     suspects = list(accusation_suspect.values())
@@ -66,14 +71,25 @@ def make_accusation():
         print(numbers_of_rooms[i] + " -> " + rooms[i])
     room_choice = input("Which room do you think the crime was committed in? ")
     room = accusation_rooms[room_choice]
-    accusation = {"Client Choice" : "Accusation", "Suspect Choice" : suspect, "Weapon Choice" : weapon, "Room Choice" : room, "suspect_name" : my_player.get_suspect()}
+    accusation = {"Client Choice" : "Accusation", "Suspect Choice" : suspect, "Weapon Choice" : weapon, "Room Choice" : room, "suspect_name" : my_player.get_suspect(), "client ID" : client_id}
     return accusation
+
+
+def make_suggestion():
+    """
+    Provide choices to player to make a suggestion
+    Returns:
+        A JSON string that represents the player's suggestion.
+    """
+    print("You made a suggestion.")
 
 
 def other_player_occupying_space(direction, player, players):
     """
-    Return True if another player is currently occupying a hallway
-    Return False otherwise
+    Check to see if another player is blocking a hallway.
+    Returns:
+        True if another player is currently occupying a hallway
+        False otherwise
     """
     global game_board
     for person in players:
@@ -97,8 +113,13 @@ def other_player_occupying_space(direction, player, players):
 
 def get_next_position_options(position, player, players):
     """
-    Get the options to where you can move your character
-    param: position the current player's position
+    Get a list of options to where you can move your character
+    Args:
+        position: The current player's position
+        player: The current player 
+        players: A list of the other players
+    Returns: 
+        A list containing the possible locations where the current player can move to.
     """
     global game_board, locations
     options = {}
@@ -145,6 +166,14 @@ def get_next_position_options(position, player, players):
 
 
 def build_list_of_players(list_of_players):
+    """
+    Builds an iterable list of players from the game data provided.
+    Args:
+        list_of_players: A list of dictionaries where each dictionary
+                        represents a player.
+    Returns:
+        A list of the players in the game.
+    """
     players_list = []
     for player in list_of_players:
         players_list.append(Player(player))
@@ -152,6 +181,13 @@ def build_list_of_players(list_of_players):
 
 
 def turn_options(options):
+    """
+    Presents player the choice to pick where to move to.
+    Args:
+        options: A list containing the possible locations where the current player can move to.
+    Returns: 
+        A String representing the integer of the choice made.
+    """
     length_of_dict = len(options)
     print("Where would you like to move? ")
     while True: 
@@ -163,6 +199,12 @@ def turn_options(options):
 
 
 def display_options(options):
+    """
+    Displays all the turn options in a friendly manner to the player.
+    Args:
+        options: A dictionary containing all the possible locations the player
+                can move to.
+    """
     # options is a dict, ex {"1" : "Location 1", "2" : "Location 2", etc}
     numbers = list(options.keys())
     locations = list(options.values())
@@ -172,6 +214,9 @@ def display_options(options):
 
 
 def suggestion_prompt():
+    """
+    Prompt player for choices when making a suggestion.
+    """
     print("Would you like to make a suggestion?")
     print("1 -> Yes")
     print("2 -> No")
@@ -185,6 +230,9 @@ def suggestion_prompt():
 
 
 def accusation_prompt():
+    """
+    Prompt player for choices when making an accusation.
+    """
     print("Would you like to make an accusation?")
     print("1 -> Yes")
     print("2 -> No")
@@ -196,6 +244,22 @@ def accusation_prompt():
         else:
             print("Sorry that choice is not available. Please choose from one of the given options.")
 
+
+def everyone_else_lost(client_id_of_current_player, number_of_players, players_who_lost):
+    """
+    Determines if everyone else except the current player has lost, i.e. made an incorrect accusation.
+    Args:
+        client_id_of_current_player - An integer representing the ID of the current player
+        number_of_players - An integer representing the number of players in the game
+        players_who_lost - A list containing strings of the client ID's of the clients who lost
+    Returns:
+        True if everyone else has lost except for current player 
+        else returns False
+    """
+    if len(players_who_lost) == number_of_players - 1 and client_id_of_current_player not in players_who_lost:
+        return True
+    else:
+        return False
 
 
 # Print welcome message here 
@@ -226,12 +290,33 @@ while True:
 
 # Playing game
 while True:
+    # print("Waiting right before receiving the latest game data")
     # Receive game data including other players' data from server
     game_data = recvjson(server_to_connect_to)
+
+    current_player_index = game_data["current_player_index"]
+    # print(f"The current players index is {current_player_index}")
+
+    # number_of_players = game_data["number of players"]
+    # print(f"The number of players is {number_of_players}")
+    if client_id == str(int(current_player_index) - 1) or (int(client_id) - (game_data["number of players"] - 1)) == int(current_player_index):
+        pass
+    else:
+        print(game_data["game status"])
+
+    if client_id in game_data["kicked players"]:
+        print("The game has ended since everyone except one player has made an incorrect accusation.")
+        break
 
     # Check if we have a winner, if so disconnect from server.
     if game_data["accusation_correct"] == "True":
         print("Someone has made a correct accusation. The game is now over.")
+        sendjson(server_to_connect_to, {"Client Choice" : "End Game", "client ID" : client_id})
+        break
+
+    if everyone_else_lost(client_id, game_data["number of players"], game_data["players who lost"]):
+        print("Everyone has made an incorrect accusation, therefore you win by default. Congrats!")
+        sendjson(server_to_connect_to, {"Client Choice" : "Kick Players", "client ID" : client_id})
         break
     
     my_player = Player(game_data["players"][int(client_id)]) 
@@ -242,7 +327,7 @@ while True:
     
     my_position = my_player.get_position()
 
-    current_player_index = game_data["current_player_index"]
+    # current_player_index = game_data["current_player_index"]
     
     # Handle player turn
     if client_id == current_player_index:
@@ -268,12 +353,12 @@ while True:
         if game_board[initial_position[0]][initial_position[1]] == 1 and game_board[final_position[0]][final_position[1]] == 2:
             suggestion_choice = suggestion_prompt()
             if suggestion_choice == "1":
-                print("You made a suggestion.")
+                make_suggestion()
         # if player moves from one room to another by secret passageway
         elif game_board[initial_position[0]][initial_position[1]] == 2 and game_board[final_position[0]][final_position[1]] == 2:
             suggestion_choice = suggestion_prompt()
             if suggestion_choice == "1":
-                print("You made a suggestion.")
+                make_suggestion()
         # handle accusation
         accusation_choice = accusation_prompt()
         if accusation_choice == "1":
@@ -290,10 +375,17 @@ while True:
         # end of player's turn
         else:
             print("Your turn is now over. Please wait until it is your turn again.")
+            # print(f"The client ID of the player who's turn just ended was {client_id}")
             # Send updated dictionary containing players' positions to server and get next player turn
-            sendjson(server_to_connect_to, {"Client Choice" : "Update", "suspect_name" : my_player.get_suspect(), "new_position" : my_player.get_position_as_string()})
-    # else:
+            sendjson(server_to_connect_to, {"Client Choice" : "Update", "suspect_name" : my_player.get_suspect(), "new_position" : my_player.update_location(my_player.get_position_as_string()), "coordinates" : my_player.get_position_as_string()})
+    else:
+        # print(game_data["game status"])
+        # number_of_players = game_data["number of players"]
+        # print(f"The number of players is {number_of_players}")
+        if client_id == str(int(current_player_index) - 1):
+            pass
+        else:
+            current_player = game_data["players"][int(current_player_index)]["suspect_name"]
+            print(f"It is still not your turn. Please wait while {current_player} finishes their turn.")
         # print("It is not your turn. Please Wait.")
     time.sleep(1)
-
-print("Disconnected from server.")

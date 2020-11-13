@@ -1,7 +1,13 @@
 import json
 
 # Some helper functions to send data between server and clients
-def _send(socket, data):
+def send(socket, data):
+    """
+    Helper method to send data to server/client.
+    Args: 
+        socket: The point of connection between the client and server.
+        data: The data to be sent.
+    """
     try:
         serialized = json.dumps(data)
     except (TypeError, ValueError) as e:
@@ -12,7 +18,14 @@ def _send(socket, data):
     socket.sendall(serialized.encode())
 
 
-def _recv(socket):
+def recv(socket):
+    """
+    Helper method to receive data from the client/server.
+    Args: 
+        socket: The point of connection between the client and server.
+    Returns:
+        A JSON string containing data received.
+    """
     # read the length of the data, letter by letter until we reach EOL
     length_str = ''
     char = socket.recv(1).decode()
@@ -34,18 +47,38 @@ def _recv(socket):
 
 
 def sendjson(socket, data):
+    """
+    Send a JSON string to the client/server represented by the socket.
+    Args: 
+        socket: The point of connection between the client and server.
+        data: The data to be sent.
+    """
     if not socket:
         raise Exception('You have to connect first before sending data')
-    _send(socket, data)
+    send(socket, data)
     # return self
 
 
 def recvjson(socket):
+    """
+    Receive a JSON string from the client/server represented by the socket.
+    Args: 
+        socket: The point of connection between the client and server.
+    Returns:
+        A JSON string containing data received.
+    """
     if not socket:
         raise Exception('You have to connect first before receiving data')
-    return _recv(socket)
+    return recv(socket)
 
 
 def convert_into_real_position(position):
-    # Input is "(x, y)"
+    """
+    Transforms String representation of position to a tuple
+    containing integers.
+    Args:
+        position: A String representation of the (x, y) coordinates of a position.
+    Returns:
+        A tuple containing integers of the (x, y) coordinates given as input.
+    """
     return (int(position[1]), int(position[4]))
