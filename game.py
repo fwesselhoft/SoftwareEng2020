@@ -105,7 +105,20 @@ def make_suggestion():
     room_choice = input("In the Tudor Mansion: what room do you believe this suspect murdered Mr. Boddy? ")
     room = accusation_rooms[room_choice]
     suggestion = {"Client Choice" : "Suggestion", "Suspect Choice" : suspect, "Weapon Choice" : weapon, "Room Choice" : room, "suspect_name" : my_player.get_suspect(), "client ID" : client_id}
-    print("You made a suggestion.")    
+    print("You made a suggestion.") 
+    # Attempt disproving
+    # While the current player is not the suggesting player,
+    # or the disproof has not transpired: attempt disproving.
+
+    # Conditional: The disproof is successful, 
+    # then choose a card
+    # then show the suggesting player this card
+
+    print("Your turn is now over. Please wait until it is your turn again.")
+    # print(f"The client ID of the player who's turn just ended was {client_id}")
+    # Send updated dictionary containing players' positions to server and get next player turn
+    sendjson(server_to_connect_to, {"Client Choice" : "Update", "suspect_name" : my_player.get_suspect(), "new_position" : my_player.update_location(my_player.get_position_as_string()), "coordinates" : my_player.get_position_as_string()})
+       
     return suggestion
 
 
