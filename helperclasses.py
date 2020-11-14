@@ -71,6 +71,20 @@ class GameBoard():
         real_location = (int(location[1]), int(location[4]))
         return self.locations[real_location]
 
+    def get_position_of_location(self, location):
+        """
+        Obtains the coordinates of a location as a String representation.
+        Args: 
+            location: A String that represents a location on the gameboard.
+        Returns:
+            A String representation of the coordinates to a corresponding location.
+        """
+        positions = list(self.locations.keys())
+        locations = list(self.locations.values())
+        indexOfLocation = locations.index(location)
+        final_position = str(positions[indexOfLocation])
+        return final_position
+
 
 
 class Player():
@@ -154,3 +168,9 @@ class Player():
         """
         location = self.gameboard.get_location(position)
         return location
+
+    def get_cards(self):
+        """
+        Returns: A list of Strings representing the player's cards.
+        """
+        return self.cards
