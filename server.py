@@ -32,6 +32,8 @@ clients = []
 client_id = 0
 current_player_index = 0
 
+clients_to_disprove = []
+
 # General form of player data so that each client may draw a new frame during game
 players = [
     {"suspect_name" : "Miss Scarlet", "position" : "(0, 3)", "cards" : [], "accusation wrong" : "False"}, 
@@ -58,7 +60,14 @@ game_data = {
     "players who lost" : [],
     "number of players" : connections,
     "kicked players" : [],
-    "game status" : "The Game Has Started. Goodluck!"
+    "game status" : "The Game Has Started. Goodluck!",
+    "suggestion suspect" : "",
+    "suggestion weapon" : "",
+    "suggestion room" : "",
+    "player making suggestion" : "",
+    "player making disproval" : "", 
+    "disproval card" : "",
+    "suggestion" : "False"
 }
 
 
@@ -157,7 +166,8 @@ def get_next_player():
     or not. Cycles around players, so that when one round of player turns has
     passed, it starts again at the first player.
     """
-    global current_player_index, game_data, players
+    global game_data, players
+    current_player_index = int(game_data["current_player_index"])
     current_player_index += 1
     if current_player_index >= len(clients):
         current_player_index = 0
@@ -264,6 +274,27 @@ def remove_players_who_lost(client_id):
             game_data["kicked players"].append(id_of_player_who_lost)
 
 
+def set_clients_to_disprove(client_id):
+    """
+    Builds list of players who must try to disprove the suggestion.
+    Args: 
+        client_id: A String representing the client ID of the player making the suggestion.
+    Returns:
+        A list of Strings containing the numbers of the clients who must try to disprove suggestion.
+    """
+    global clients_to_disprove
+    for i in range(0, len(clients)):
+        if int(client_id) != i:
+            clients_to_disprove.append(str(i))
+
+
+
+def player_who_made_suggestion(suspect):
+    for i in range(0, len(players)):
+        if players[i]["suspect_name"] == suspect:
+            return i
+
+
 # winning_cards[2] is the suspect
 # winning_cards[1] is the weapon
 # winning_cards[0] is the room
@@ -294,13 +325,33 @@ while True:
         while True:
             # Send game data to players so they can make a move
             broadcast(game_data)
-            # Receive the players move
-            response = recvjson(clients[current_player_index][0])
+
+            response = recvjson(clients[int(game_data["current_player_index"])][0])
             
-            # print(response)
             # Process the player's move
             if response["Client Choice"] == "End Game":
                 break
+            elif response["Client Choice"] == "Disprove":
+                disproval_card = response["disproval card"]
+                game_data["disproval card"] = disproval_card
+                if disproval_card != "":
+                    game_data["current_player_index"] = str(player_who_made_suggestion(game_data["player making suggestion"]))
+                    current_player_index = int(game_data["current_player_index"])
+                    game_data["player making disproval"] = clients_to_disprove[int(current_player_index)]
+                    game_data["suggestion"] = "False"
+                else:
+                    # print("The client ID who just finished the recent disproval is " + str(game_data["player making disproval"]))
+                    index_of_current_player_making_disproval = int(game_data["player making disproval"])
+                    if index_of_current_player_making_disproval == len(clients) - 1:
+                        print("Everyone has attempted to disprove but were unsuccessful.")
+                        game_data["current_player_index"] = str(player_who_made_suggestion(game_data["player making suggestion"]))
+                    index_of_current_player_making_disproval += 1
+                    # print("The client ID of the next player who will try to disprove is " + str(index_of_current_player_making_disproval))
+                    if index_of_current_player_making_disproval < len(clients):
+                        game_data["player making disproval"] = index_of_current_player_making_disproval # next client in list of clients to attempt to disprove
+                        get_next_player()
+                    else:
+                        print("All players have already attempted to disprove the suggestion.")
             elif response["Client Choice"] == "Kick Players":
                 remove_players_who_lost(response["client ID"])
                 broadcast(game_data)
@@ -310,17 +361,30 @@ while True:
                 game_data["game status"] = response["suspect_name"] + " made a " + guess + " accusation."
                 clients[current_player_index][0].send(str.encode(guess))
                 get_next_player()
-                # broadcast_to_everyone_except_current_player(game_data)
             elif response["Client Choice"] == "Suggestion":
-                game_data["game status"] = "A player made a suggestion."
-                get_next_player() # For now when a player makes a suggestion, the server simply gets the next player
-                # broadcast_to_everyone_except_current_player(game_data)
+                update_players(response["Suspect Choice"], response["new_position"])
+                game_data["game status"] = response["suspect_name"] + " made a suggestion."
+                game_data["suggestion suspect"] = response["Suspect Choice"]
+                game_data["suggestion weapon"] = response["Weapon Choice"]
+                game_data["suggestion room"] = response["Room Choice"]
+                game_data["player making suggestion"] = response["suspect_name"]
+                game_data["suggestion"] = "True"
+                set_clients_to_disprove(response["client ID"])
+                game_data["player making disproval"] = clients_to_disprove[0] # start at first player to disprove
+                get_next_player()
             elif response["Client Choice"] == "Update":
                 new_coordinates = response["coordinates"]
                 game_data["game status"] = response["suspect_name"] + " has moved to the " + response["new_position"]                
                 update_players(response["suspect_name"], new_coordinates)
+                if response["suggestion suspect"] != "":
+                    game_data["current_player_index"] = str(player_who_made_suggestion(response["player making suggestion"]))
+                    game_data["suggestion suspect"] = ""
+                    game_data["suggestion weapon"] = ""
+                    game_data["suggestion room"] = ""
+                    game_data["player making suggestion"] = ""
+                    game_data["player making disproval"] = "" 
+                    game_data["disproval card"] = ""
                 get_next_player()
-                # broadcast_to_everyone_except_current_player(game_data)
             else:
                 get_next_player()
             time.sleep(0.1)
