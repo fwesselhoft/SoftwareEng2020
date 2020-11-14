@@ -81,7 +81,32 @@ def make_suggestion():
     Returns:
         A JSON string that represents the player's suggestion.
     """
-    print("You made a suggestion.")
+    # With the same functionality, here: for suggesting the possible murderer, 
+    # the accusation_suspect function serves the same purpose.
+    # print(suggestion_suspect)
+    numbers_of_suspects = list(accusation_suspect.keys())
+    suspects = list(accusation_suspect.values())
+    for i in range(0, len(accusation_suspect)):
+        print(numbers_of_suspects[i] + " -> " + suspects[i])
+    suspect_choice = input("Which suspect do you suggest murdered Mr. Boddy? ")
+    suspect = accusation_suspect[suspect_choice]
+    # print(accusation_weapons)
+    numbers_of_weapons = list(accusation_weapons.keys())
+    weapons = list(accusation_weapons.values())
+    for i in range(0, len(accusation_weapons)):
+        print(numbers_of_weapons[i] + " -> " + weapons[i])
+    weapon_choice = input("Against Mr. Boddy: what weapon do you suggest this suspect wielded? ")
+    weapon = accusation_weapons[weapon_choice]
+    # print(accusation_rooms)
+    numbers_of_rooms = list(accusation_rooms.keys())
+    rooms = list(accusation_rooms.values())
+    for i in range(0, len(accusation_rooms)):
+        print(numbers_of_rooms[i] + " -> " + rooms[i])
+    room_choice = input("In the Tudor Mansion: what room do you believe this suspect murdered Mr. Boddy? ")
+    room = accusation_rooms[room_choice]
+    suggestion = {"Client Choice" : "Suggestion", "Suspect Choice" : suspect, "Weapon Choice" : weapon, "Room Choice" : room, "suspect_name" : my_player.get_suspect(), "client ID" : client_id}
+    print("You made a suggestion.")    
+    return suggestion
 
 
 def other_player_occupying_space(direction, player, players):
