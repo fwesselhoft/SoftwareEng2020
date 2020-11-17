@@ -31,6 +31,7 @@ clients = []
 
 client_id = 0
 current_player_index = 0
+player_who_made_disproval = None
 
 clients_to_disprove = []
 
@@ -60,14 +61,16 @@ game_data = {
     "players who lost" : [],
     "number of players" : connections,
     "kicked players" : [],
-    "game status" : "The Game Has Started. Goodluck!",
+    "game status" : "",
     "suggestion suspect" : "",
     "suggestion weapon" : "",
     "suggestion room" : "",
     "player making suggestion" : "",
     "player making disproval" : "", # Need function or a way to input 1, 2, 3, etc for clients one at a time.
     "disproval card" : "",
-    "suggestion" : "False"
+    "suggestion" : "False",
+    "disprovals made" : 0,
+    "player_who_made_disproval" : ""
 }
 
 
@@ -318,6 +321,36 @@ def get_correct_start_value(client_id):
     return str(start_index)
 
 
+def send_start_info(client_id):
+    """
+    Send start message to each client to begin the game.
+    Args:
+        client_id: A String representing the client_id of the client. 
+    """
+    global players
+    start_info = {
+                "game message" : 'The Game Has Started',
+                "client_id" : client_id,
+                "cards" : players[int(client_id)]["cards"],
+                "players" : players
+            }
+    sendjson(clients[int(client_id)][0], start_info)
+
+
+def reset_suggestion():
+    """
+    Resets the game_data so that a new suggestion could be made after the previous suggestion.
+    """
+    global game_data, clients_to_disprove
+    game_data["suggestion"] = "False"
+    game_data["suggestion suspect"] = ""
+    game_data["suggestion weapon"] = ""
+    game_data["suggestion room"] = ""
+    game_data["player making suggestion"] = ""
+    game_data["player making disproval"] = ""
+    clients_to_disprove = []
+
+
 # winning_cards[2] is the suspect
 # winning_cards[1] is the weapon
 # winning_cards[0] is the room
@@ -335,14 +368,17 @@ while True:
 
     print("[SERVER] A new connection has been established.")
     
-    if connections >= 3:
+    if connections >= 5:
+
         pass_out_cards(combined_deck)
-        # send start game message to each client, along with their ID "The Game Has Started,ID#"
-        for client in clients:
-            client[0].send(str.encode("The Game Has Started," + str(client[1])))
+        print("[SERVER] The Game is being initialized.")
+
+        for i in range(0, len(clients)):
+            send_start_info(str(i))
+            
         time.sleep(1)
 
-        print("[SERVER] The game has started.")
+        print("[SERVER] The Game has started.")
 
         # Playing game
         while True:
@@ -361,28 +397,25 @@ while True:
                 disproval_card = response["disproval card"]
                 game_data["disproval card"] = disproval_card
                 if disproval_card != "":
-                    game_data["player making disproval"] = ""
-                    game_data["suggestion"] = "False"
-                    game_data["suggestion suspect"] = ""
-                    game_data["suggestion weapon"] = ""
-                    game_data["suggestion room"] = ""
-                    game_data["player making suggestion"] = ""
-                    clients_to_disprove = []
+                    game_data["player_who_made_disproval"] = players[int(game_data["player making disproval"])]["suspect_name"]
+                    game_data["game status"] = game_data["player_who_made_disproval"] + " has disproved the suggestion."
+                    reset_suggestion()
                 else:
-                    index_of_current_player_making_disproval = int(game_data["player making disproval"])
-                    if index_of_current_player_making_disproval + 1 < len(clients):
-                        index_of_current_player_making_disproval += 1
-                        game_data["player making disproval"] = index_of_current_player_making_disproval
-                    else:
-                        print("Everyone has attempted to disprove but were unsuccessful.")
-                        game_data["suggestion"] = "False"
-                        game_data["suggestion suspect"] = ""
-                        game_data["suggestion weapon"] = ""
-                        game_data["suggestion room"] = ""
-                        game_data["player making suggestion"] = ""
+                    game_data["disprovals made"] += 1
+                    if game_data["disprovals made"] == game_data["number of players"] - 1:
                         game_data["disproval card"] = ""
-                        game_data["player making disproval"] = ""
-                        clients_to_disprove = []
+                        game_data["disprovals made"] = 0
+                        game_data["game status"] = "None of the players were able to disprove the suggestion."
+                        reset_suggestion()
+                    else:
+                        # get next player to disprove
+                        index_of_current_player_making_disproval = int(game_data["player making disproval"])
+                        if index_of_current_player_making_disproval + 1 < len(clients):
+                            index_of_current_player_making_disproval += 1
+                            game_data["player making disproval"] = index_of_current_player_making_disproval
+                        else:
+                            index_of_current_player_making_disproval = 0
+                            game_data["player making disproval"] = index_of_current_player_making_disproval
             elif response["Client Choice"] == "Kick Players":
                 remove_players_who_lost(response["client ID"])
                 broadcast(game_data)
@@ -390,7 +423,7 @@ while True:
             elif response["Client Choice"] == "Accusation":
                 guess = validate_accusation(response)
                 game_data["game status"] = response["suspect_name"] + " made a " + guess + " accusation."
-                clients[current_player_index][0].send(str.encode(guess))
+                clients[int(game_data["current_player_index"])][0].send(str.encode(guess))
                 get_next_player()
             elif response["Client Choice"] == "Suggestion":
                 update_players(response["Suspect Choice"], response["new_position"])
@@ -411,7 +444,7 @@ while True:
             else:
                 get_next_player()
             time.sleep(0.1)
-    if connections >= 3:
+    if connections >= 5:
         break
     time.sleep(1)
 

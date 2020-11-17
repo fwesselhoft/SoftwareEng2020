@@ -43,6 +43,8 @@ gameboard = GameBoard()
 game_board = gameboard.get_gameboard()
 locations = gameboard.get_locations()
 
+my_player = None
+
 
 def generate_choices():
     """
@@ -306,12 +308,19 @@ server_to_connect_to.connect((host, port))
 client_id = None
 
 while True:
-    server_data = server_to_connect_to.recv(1024).decode("utf-8")
-    client_id = server_data.split(",")[1]
-    if server_data.split(",")[0] == "The Game Has Started":
+    print("Waiting for enough players to join...")
+    start_data = recvjson(server_to_connect_to)
+    client_id = start_data["client_id"]
+    my_player = Player(start_data["players"][int(client_id)])
+    if start_data["game message"] == "The Game Has Started":
+        print("Enough players have joined, the game is now starting...")
         break
     time.sleep(0.1)
 
+print("The Game has Started! Goodluck!")
+print("****************************************************************************************")
+my_player.display_cards()
+print("****************************************************************************************")
 
 # Playing game
 while True:
@@ -319,10 +328,6 @@ while True:
     game_data = recvjson(server_to_connect_to)
     # current_player_index is a string
     current_player_index = game_data["current_player_index"]
-
-    my_player = Player(game_data["players"][int(client_id)])
-    my_player.display_cards()
-
 
     ######################################################################
 
@@ -332,7 +337,6 @@ while True:
             print("It is my turn to try and disprove the suggestion")
             possible_cards = check_cards(my_player.get_cards(), game_data["suggestion suspect"], game_data["suggestion weapon"], game_data["suggestion room"])
             if len(possible_cards) > 0:
-                print(f"Possible cards are {possible_cards}")
                 print("Choose one of the following cards to disprove the suggestion:")
                 counter = 0
                 for card in possible_cards:
@@ -347,11 +351,6 @@ while True:
                 continue
 
     ######################################################################
-
-    if client_id == str(int(current_player_index) - 1) or (int(client_id) - (game_data["number of players"] - 1)) == int(current_player_index):
-        pass
-    else:
-        print(game_data["game status"])
 
     if client_id in game_data["kicked players"]:
         print("The game has ended since everyone except one player has made an incorrect accusation.")
@@ -398,12 +397,13 @@ while True:
                 sendjson(server_to_connect_to, suggestion)
                 # Experimenting with suggestion
                 ######################################################
+                print("Waiting for a player to disprove my suggestion...")
                 while True:
                     game_data = recvjson(server_to_connect_to)
                     disproval_card = game_data["disproval card"]
-                    print(disproval_card)
                     if disproval_card != "": #or it it my turn again:
-                        print(f"A player has showed you {disproval_card}")
+                        print(game_data["player_who_made_disproval"], end="")
+                        print(f" has showed you {disproval_card}")
                         break
                     elif game_data["suggestion"] == "False":
                         print("No one was able to disprove your suggestion")
@@ -419,12 +419,13 @@ while True:
                 sendjson(server_to_connect_to, suggestion)
                 # Experimenting with suggestion
                 ######################################################
-                while True:
+                print("Waiting for a player to disprove my suggestion...")
+                while True:                    
                     game_data = recvjson(server_to_connect_to)
                     disproval_card = game_data["disproval card"]
-                    print(disproval_card)
                     if disproval_card != "": #or it it my turn again:
-                        print(f"A player has showed you {disproval_card}")
+                        print(game_data["player_who_made_disproval"], end="")
+                        print(f" has showed you {disproval_card}")
                         break
                     elif game_data["suggestion"] == "False":
                         print("No one was able to disprove your suggestion")
@@ -455,5 +456,6 @@ while True:
             pass
         else:
             current_player = game_data["players"][int(current_player_index)]["suspect_name"]
+            print(game_data["game status"])
             print(f"It is still not your turn. Please wait while {current_player} finishes their turn.")
     time.sleep(1)
