@@ -2,6 +2,7 @@ import socket
 import time
 from helperfunctions import recvjson, sendjson
 from helperclasses import Player, GameBoard
+from music import Music # added by Nayila 12/11
 # Will use some help from regular expressions later on to provide better user input error checking
 # import re
 
@@ -291,7 +292,7 @@ def check_cards(player_cards, suspect, weapon, room):
 
 # Print welcome message here 
 print("Welcome to ClueLess!")
-
+play_music() #added by Nayila 12/11
 
 # Get player's name
 while True:
