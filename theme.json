@@ -1,0 +1,270 @@
+{
+    "defaults":
+    {
+        "colours":
+        {
+            "normal_bg":"#45494e",
+            "hovered_bg":"#35393e",
+            "disabled_bg":"#ffffff",
+            "selected_bg":"#193754",
+            "dark_bg":"#15191e",
+            "normal_text":"#c5cbd8",
+            "hovered_text":"#FFFFFF",
+            "selected_text":"#FFFFFF",
+            "disabled_text":"#ffffff",
+            "link_text": "#0000EE",
+            "link_hover": "#2020FF",
+            "link_selected": "#551A8B",
+            "text_shadow": "#777777",
+            "normal_border": "#DDDDDD",
+            "hovered_border": "#B0B0B0",
+            "disabled_border": "#808080",
+            "selected_border": "#8080B0",
+            "active_border": "#8080B0",
+            "filled_bar":"#f4251b",
+            "unfilled_bar":"#CCCCCC"
+        }
+    },
+    "label":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_text":"#ffffff"
+        },
+
+        "font":
+        {
+            "name":"Oswald-Bold",
+            "size":"36",
+            "bold":"0",
+            "italic":"0",
+            "regular_path":"fonts/Oswald-Bold.ttf"
+        },
+
+        "misc":
+        {
+            "tool_tip_delay": "1.5"
+        }
+    },
+    "my_player_label":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_text":"#ffffff"
+        },
+
+        "font":
+        {
+            "name":"Oswald-Bold",
+            "size":"24",
+            "bold":"0",
+            "italic":"0",
+            "regular_path":"fonts/Oswald-Bold.ttf"
+        },
+
+        "misc":
+        {
+            "tool_tip_delay": "1.5"
+        }
+    },
+    "my_cards_label":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_text":"#ffffff"
+        },
+
+        "font":
+        {
+            "name":"Oswald-Bold",
+            "size":"24",
+            "bold":"0",
+            "italic":"0",
+            "regular_path":"fonts/Oswald-Bold.ttf"
+        },
+
+        "misc":
+        {
+            "tool_tip_delay": "1.5"
+        }
+    },
+    "suspects_label":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_text":"#ffffff"
+        },
+
+        "font":
+        {
+            "name":"Oswald-Bold",
+            "size":"16",
+            "bold":"0",
+            "italic":"0",
+            "regular_path":"fonts/Oswald-Bold.ttf"
+        },
+
+        "misc":
+        {
+            "tool_tip_delay": "1.5"
+        }
+    },
+    "weapons_label":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_text":"#ffffff"
+        },
+
+        "font":
+        {
+            "name":"Oswald-Bold",
+            "size":"16",
+            "bold":"0",
+            "italic":"0",
+            "regular_path":"fonts/Oswald-Bold.ttf"
+        },
+
+        "misc":
+        {
+            "tool_tip_delay": "1.5"
+        }
+    },
+    "rooms_label":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_text":"#ffffff"
+        },
+
+        "font":
+        {
+            "name":"Oswald-Bold",
+            "size":"16",
+            "bold":"0",
+            "italic":"0",
+            "regular_path":"fonts/Oswald-Bold.ttf"
+        },
+
+        "misc":
+        {
+            "tool_tip_delay": "1.5"
+        }
+    },
+    "player_name_label":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_text":"#ffffff"
+        },
+
+        "font":
+        {
+            "name":"Oswald-Bold",
+            "size":"16",
+            "bold":"0",
+            "italic":"0",
+            "regular_path":"fonts/Oswald-Bold.ttf"
+        },
+
+        "misc":
+        {
+            "tool_tip_delay": "1.5"
+        }
+    },
+    "panel":
+    {
+        "colours":
+        {
+            "dark_bg":"#000000",
+            "normal_border":"#ffffff"
+        },
+
+        "images":
+        {
+            "background_image": 
+            {
+                "path": "images/Haunted House.jpg"
+            }
+        },
+        "misc":
+        {
+            "shape": "rounded_rectangle"
+
+        }
+    },
+    "drop_down_menu":
+    {
+        "colours":
+        {
+            "dark_bg":"#ffffff",
+            "normal_border":"#ffffff"
+        },
+        "misc":
+        {
+            "shape": "rounded_rectangle"
+
+        }
+    },
+    "drop_down_menu.button":
+    {
+        "colours":
+        {
+            "normal_bg":"#ffffff00",
+            "normal_border":"#000000",
+            "normal_text":"#000000"
+        }
+    },
+    "text_entry_line":
+    {
+        "colours":
+        {
+            "dark_bg":"#ffffff",
+            "disabled_bg":"#ffffff",
+            "normal_border":"#000000",
+            "normal_text":"#000000"
+        },
+        "misc":
+        {
+            "shape": "rounded_rectangle"
+
+        }
+    },
+    "text_box":
+    {
+        "colours":
+        {
+            "dark_bg":"#ffffff",
+            "normal_text":"#000000"
+        },
+        "misc":
+        {
+            "shape": "rounded_rectangle"
+
+        }
+    },
+    "button":
+    {
+        "colours":
+        {
+            "normal_bg":"#ffffff",
+            "disabled_bg":"#ffffff",
+            "normal_text":"#000000",
+            "disabled_text":"#000000",
+            "hovered_bg":"#ffffff",
+            "hovered_text":"#000000"
+        },
+        "misc":
+        {
+            "shape": "rounded_rectangle"
+
+        }
+    }
+}
