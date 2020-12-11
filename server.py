@@ -351,6 +351,18 @@ def reset_suggestion():
     clients_to_disprove = []
 
 
+def check_for_new_connection():
+    global connections
+    if connections == 4:
+        return True
+    elif connections == 5:
+        return True
+    elif connections == 6:
+        return True
+    else:
+        return False
+
+
 # winning_cards[2] is the suspect
 # winning_cards[1] is the weapon
 # winning_cards[0] is the room
@@ -368,7 +380,20 @@ while True:
 
     print("[SERVER] A new connection has been established.")
     
-    if connections >= 5:
+    if connections >= 3:
+
+        # ##################################################################
+        # #countdown logic
+        # print("[SERVER] Enough players have joined, the game will start in 10 seconds unless more players join.")
+        # seconds = 10
+        # while (seconds > 0):
+        #     if seconds == 1:
+        #         print(f"[SERVER] Time remaining before start of game: {seconds} second.", end="\r")
+        #     else:    
+        #         print(f"[SERVER] Time remaining before start of game: {seconds} seconds.", end="\r")
+        #     time.sleep(1)
+        #     seconds -= 1
+        # ##################################################################
 
         pass_out_cards(combined_deck)
         print("[SERVER] The Game is being initialized.")
@@ -389,6 +414,8 @@ while True:
                 response = recvjson(clients[int(game_data["player making disproval"])][0])
             else:  
                 response = recvjson(clients[int(game_data["current_player_index"])][0])
+
+            # print(response)
             
             # Process the player's move
             if response["Client Choice"] == "End Game":
@@ -401,8 +428,10 @@ while True:
                     game_data["game status"] = game_data["player_who_made_disproval"] + " has disproved the suggestion."
                     reset_suggestion()
                 else:
+                    # print("I did not have a card to disprove the suggestion.")
                     game_data["disprovals made"] += 1
                     if game_data["disprovals made"] == game_data["number of players"] - 1:
+                        # print("Everyone has attempted to disprove but were unsuccessful.")
                         game_data["disproval card"] = ""
                         game_data["disprovals made"] = 0
                         game_data["game status"] = "None of the players were able to disprove the suggestion."
@@ -410,6 +439,7 @@ while True:
                     else:
                         # get next player to disprove
                         index_of_current_player_making_disproval = int(game_data["player making disproval"])
+                        # print(f"Index of current player making disproval is {index_of_current_player_making_disproval}")
                         if index_of_current_player_making_disproval + 1 < len(clients):
                             index_of_current_player_making_disproval += 1
                             game_data["player making disproval"] = index_of_current_player_making_disproval
@@ -423,6 +453,9 @@ while True:
             elif response["Client Choice"] == "Accusation":
                 guess = validate_accusation(response)
                 game_data["game status"] = response["suspect_name"] + " made a " + guess + " accusation."
+                # print(f"The current player index is: {current_player_index}")
+                # print(game_data)
+                # clients[current_player_index][0].send(str.encode(guess))
                 clients[int(game_data["current_player_index"])][0].send(str.encode(guess))
                 get_next_player()
             elif response["Client Choice"] == "Suggestion":
@@ -444,7 +477,7 @@ while True:
             else:
                 get_next_player()
             time.sleep(0.1)
-    if connections >= 5:
+    if connections >= 3:
         break
     time.sleep(1)
 

@@ -1,5 +1,7 @@
 import socket
 import time
+import pygame
+import pygame_gui
 from helperfunctions import recvjson, sendjson
 from helperclasses import Player, GameBoard
 # Will use some help from regular expressions later on to provide better user input error checking
@@ -39,12 +41,46 @@ accusation_rooms = {
     "8": "Library"
 }
 
+card_paths = {
+    "Mr. Green": "images/cards/Mr. Green.png",
+    "Mrs. White": "images/cards/Mrs. White.png",
+    "Col. Mustard": "images/cards/Col. Mustard.png",
+    "Miss Scarlet": "images/cards/Miss Scarlet.png",
+    "Prof. Plum": "images/cards/Prof. Plum.png",
+    "Mrs. Peacock": "images/cards/Mrs. Peacock.png",
+    "Rope": "images/cards/Rope.png",
+    "Lead Pipe": "images/cards/Lead Pipe.png",
+    "Revolver": "images/cards/Revolver.png",
+    "Candlestick": "images/cards/Candlestick.png",
+    "Wrench": "images/cards/Wrench.png",
+    "Knife": "images/cards/Knife.png",
+    "Study": "images/cards/Study.png",
+    "Hall": "images/cards/Hall.png",
+    "Lounge": "images/cards/Lounge.png",
+    "Dining Room": "images/cards/Dining Room.png",
+    "Kitchen": "images/cards/Kitchen.png",
+    "Ballroom": "images/cards/Ballroom.png",
+    "Billiard Room": "images/cards/Billiard Room.png",
+    "Conservatory": "images/cards/Conservatory.png",
+    "Library": "images/cards/Library.png",
+    "Miss Scarlet Icon":"images/Miss Scarlet.png",
+    "Mr. Green Icon":"images/Mr. Green.png",
+    "Prof. Plum Icon":"images/Prof. Plum.png",
+    "Mrs. White Icon":"images/Mrs. White.png",
+    "Col. Mustard Icon":"images/Col. Mustard.png",
+    "Mrs. Peacock Icon":"images/Mrs. Peacock.png"
+}
+
 gameboard = GameBoard()
 game_board = gameboard.get_gameboard()
 locations = gameboard.get_locations()
 
 my_player = None
+client_id = None
 
+WIDTH = 1200
+HEIGHT = 800
+BACKGROUND_COLOR = pygame.Color(0, 0, 0)
 
 def generate_choices():
     """
@@ -173,6 +209,7 @@ def get_next_position_options(position, player, players):
     elif position[0] == 4 and position[1] == 4:
         options[str(option_choice)] = (locations[(0, 0)])
         option_choice += 1
+    
     return options
 
 
@@ -289,38 +326,259 @@ def check_cards(player_cards, suspect, weapon, room):
     return options
 
 
+def draw_cards(cards, manager):
+    start_position = 250
+    my_cards_rect = pygame.Rect(250, 560, 105, 35)
+    my_cards_label = pygame_gui.elements.UILabel(my_cards_rect, "My Cards:", manager, None, object_id="my_cards_label")
+    for card in cards:
+        pygame_gui.elements.UIImage(pygame.Rect(start_position, 600, 120, 140), pygame.image.load(card_paths[card]), manager)
+        start_position += 130
+
+
+def draw_my_player(player, manager):
+    my_player_rect = pygame.Rect(50, 40, 105, 35)
+    my_player_label = pygame_gui.elements.UILabel(my_player_rect, "My Player:", manager, None, object_id="my_player_label")
+    pygame_gui.elements.UIImage(pygame.Rect(50, 80, 120, 140), pygame.image.load(card_paths[player + " Icon"]), manager)
+
+
+def draw_player(player, position, manager):
+    player_icon = pygame.image.load(player)
+    player_image = pygame_gui.elements.UIImage(position, player_icon, manager)
+
+
+def set_game_message(message, manager):
+    game_message = pygame_gui.elements.UITextBox(message, pygame.Rect(930, 60, 250, 65), manager)
+
+
+def game_lobby(start_data, my_player):
+    global card_paths
+
+    client_id = start_data["client_id"]
+    my_cards = start_data["cards"]
+    my_suspect = start_data["players"][int(client_id)]["suspect_name"]
+    
+    game_lobby_screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    game_lobby_background = pygame.Surface((WIDTH, HEIGHT))
+    game_lobby_background.fill(BACKGROUND_COLOR)
+
+    game_lobby_manager = pygame_gui.UIManager((WIDTH, HEIGHT), "theme.json")
+
+    game_board = pygame.image.load("images/Gameboard5.png")
+    game_board_image = pygame_gui.elements.UIImage(pygame.Rect(210, 45, 700, 490), game_board, game_lobby_manager)
+
+    draw_my_player(my_suspect, game_lobby_manager)
+    draw_cards(my_cards, game_lobby_manager)
+
+    drop_down_menu = pygame_gui.elements.UIDropDownMenu(["Accusation", "Suggestion", "Move"], "Accusation", pygame.Rect(50, 250, 120, 50), game_lobby_manager)
+
+    suspects_rect = pygame.Rect(37, 310, 90, 35)
+    suspects_label = pygame_gui.elements.UILabel(suspects_rect, "Suspects:", game_lobby_manager, None, object_id="suspects_label")
+    
+    suspect_selection_list = pygame_gui.elements.UIDropDownMenu(["Miss Scarlet", "Mr. Green", "Mrs. Peacock", "Mrs. White", "Prof. Plum", "Col. Mustard"], "Miss Scarlet", pygame.Rect(50, 348, 150, 50), game_lobby_manager)
+
+    weapons_rect = pygame.Rect(37, 410, 90, 35)
+    weapons_label = pygame_gui.elements.UILabel(weapons_rect, "Weapons:", game_lobby_manager, None, object_id="weapons_label")
+    weapon_selection_list = pygame_gui.elements.UIDropDownMenu(["Rope", "Revolver", "Candlestick", "Wrench", "Knife", "Lead Pipe"], "Rope", pygame.Rect(50, 448, 150, 50), game_lobby_manager)
+
+    rooms_rect = pygame.Rect(32, 510, 90, 35)
+    rooms_label = pygame_gui.elements.UILabel(rooms_rect, "Rooms:", game_lobby_manager, None, object_id="rooms_label")
+    room_selection_list = pygame_gui.elements.UIDropDownMenu(["Ballroom", "Billiard Room", "Conservatory", "Dining Room", "Hall", "Kitchen", "Study", "Lounge", "Library"], "Ballroom", pygame.Rect(50, 548, 150, 50), game_lobby_manager)
+
+    # set_game_message("New Game Message....", game_lobby_manager)
+
+    make_move_button = pygame_gui.elements.UIButton(pygame.Rect(74, 650, 100, 60), "Make Move", game_lobby_manager)
+
+    draw_player("images/Miss Scarlet.png", pygame.Rect(660, 90, 30, 40), game_lobby_manager)
+    draw_player("images/Prof. Plum.png", pygame.Rect(346, 180, 30, 40), game_lobby_manager)
+    draw_player("images/Mrs. White.png", pygame.Rect(660, 435, 30, 40), game_lobby_manager)
+    draw_player("images/Mr. Green.png", pygame.Rect(448, 435, 30, 40), game_lobby_manager)
+    draw_player("images/Col. Mustard.png", pygame.Rect(758, 338, 30, 40), game_lobby_manager)
+    draw_player("images/Mrs. Peacock.png", pygame.Rect(346, 342, 30, 40), game_lobby_manager)
+
+    clock = pygame.time.Clock()
+    # game_data = recvjson(server_to_connect_to)
+    # if client_id == game_data["current_player_index"]:
+    #     set_game_message("It is your turn.", game_lobby_manager)
+    # else:
+    #     set_game_message("It is not your turn.", game_lobby_manager)
+
+    pygame.display.update()
+
+    IS_RUNNING = True
+
+    while IS_RUNNING:
+        game_data = recvjson(server_to_connect_to)
+        current_player_index = game_data["current_player_index"]
+        list_of_players = build_list_of_players(game_data["players"])
+        my_position = my_player.get_position()
+        
+        if client_id == game_data["current_player_index"]:
+            set_game_message("It is your turn.", game_lobby_manager)
+            initial_position = my_player.get_position()
+            options = get_next_position_options(my_position, my_player, list_of_players)
+        
+            display_options(options)
+            choice = turn_options(options)
+
+            # Update player position
+            my_player.set_position(locations, options[choice])
+            # Get player's final position
+            final_position = my_player.get_position()
+        else:
+            set_game_message("It is not your turn.", game_lobby_manager)
+        time_delta = clock.tick(60)/1000.0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                IS_RUNNING = False
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    game_lobby_manager.set_visual_debug_mode(True)
+
+            game_lobby_manager.process_events(event)
+
+        game_lobby_manager.update(time_delta)
+
+        player_screen.blit(game_lobby_background, (0, 0))
+        game_lobby_manager.draw_ui(player_screen)
+
+        pygame.display.update()
+
+
+def waiting_lobby():
+    waiting_lobby_screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    waiting_lobby_background = pygame.Surface((WIDTH, HEIGHT))
+    waiting_lobby_background.fill(BACKGROUND_COLOR)
+
+    waiting_lobby_manager = pygame_gui.UIManager((WIDTH, HEIGHT), "theme.json")
+
+    waiting_rect = pygame.Rect(315, 100, 600, 60)
+    waiting_label = pygame_gui.elements.UILabel(waiting_rect, "Waiting for Enough Players to Join...", waiting_lobby_manager, None, object_id="waiting_label")
+
+    game_starting_soon_rect = pygame.Rect(115, 300, 1000, 100)
+    game_starting_soon_label = pygame_gui.elements.UILabel(game_starting_soon_rect, "The Game will start once enough players have joined. Please Wait...", waiting_lobby_manager, None)
+
+    clock = pygame.time.Clock()
+    IS_RUNNING = True
+
+    while IS_RUNNING:
+        time_delta = clock.tick(60)/1000.0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                IS_RUNNING = False
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    waiting_lobby_manager.set_visual_debug_mode(True)
+
+            waiting_lobby_manager.process_events(event)
+
+        waiting_lobby_manager.update(time_delta)
+
+        player_screen.blit(waiting_lobby_background, (0, 0))
+        waiting_lobby_manager.draw_ui(player_screen)
+
+        pygame.display.update()
+        start_data = recvjson(server_to_connect_to)
+        client_id = start_data["client_id"]
+        my_player = Player(start_data["players"][int(client_id)])
+        if start_data["game message"] == "The Game Has Started":
+            print("Enough players have joined, the game is now starting...")
+            game_lobby(start_data, my_player)
+
+
+pygame.init()
+
+pygame.display.set_caption('Clue Less')
+player_screen = pygame.display.set_mode((WIDTH, HEIGHT))
+background = pygame.Surface((WIDTH, HEIGHT))
+background.fill(BACKGROUND_COLOR)
+
+manager = pygame_gui.UIManager((WIDTH, HEIGHT), "theme.json")
+
+text_rect = pygame.Rect(700, 65, 350, 200)
+welcome_msg = pygame_gui.elements.UILabel(text_rect, "Welcome to Clue Less!", manager, None)
+
+player_name = pygame.Rect(700, 200, 330, 60)
+player_name_label = pygame_gui.elements.UILabel(player_name, "Please Enter Your Name and Hit Enter/Return:", manager, None, object_id="player_name_label")
+
+player_name_text = pygame_gui.elements.UITextEntryLine(pygame.Rect(710, 270, 190, 60), manager)
+
+join_game_button = pygame_gui.elements.UIButton(pygame.Rect(710, 340, 100, 60), "Join Game", manager)
+join_game_button.disable()
+
+house = pygame.image.load("images/Haunted House.jpg")
+house_image = pygame_gui.elements.UIImage(pygame.Rect(125, 125, 550, 450), house, manager)
+
+clock = pygame.time.Clock()
+IS_RUNNING = True
+
+while IS_RUNNING:
+    time_delta = clock.tick(60)/1000.0
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            IS_RUNNING = False
+            pygame.quit()
+            quit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                manager.set_visual_debug_mode(True)
+            if event.key == pygame.K_RETURN:
+                text_entered = player_name_text.get_text()
+                player_name_text.disable()
+                # print(text_entered)
+                join_game_button.enable()
+        if event.type == pygame.USEREVENT:
+            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == join_game_button:
+                    server_to_connect_to = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    server_to_connect_to.connect((host, port))
+                    waiting_lobby()
+                    # game_lobby()
+
+        manager.process_events(event)
+
+    manager.update(time_delta)
+
+    player_screen.blit(background, (0, 0))
+    manager.draw_ui(player_screen)
+
+    pygame.display.update()
+
 # Print welcome message here 
-print("Welcome to ClueLess!")
+# print("Welcome to ClueLess!")
 
 
 # Get player's name
-while True:
-    name = input("Please enter your name: ")
-    if 0 < len(name) < 20:
-        break
-    else:
-        print(
-            "Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
+# while True:
+#     name = input("Please enter your name: ")
+#     if 0 < len(name) < 20:
+#         break
+#     else:
+#         print(
+#             "Error, this name is not allowed (must be between 1 and 19 characters [inclusive])")
 
-server_to_connect_to = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_to_connect_to.connect((host, port))
+# server_to_connect_to = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# server_to_connect_to.connect((host, port))
 
-client_id = None
+# client_id = None
 
-while True:
-    print("Waiting for enough players to join...")
-    start_data = recvjson(server_to_connect_to)
-    client_id = start_data["client_id"]
-    my_player = Player(start_data["players"][int(client_id)])
-    if start_data["game message"] == "The Game Has Started":
-        print("Enough players have joined, the game is now starting...")
-        break
-    time.sleep(0.1)
+# while True:
+#     print("Waiting for enough players to join...")
+#     start_data = recvjson(server_to_connect_to)
+#     client_id = start_data["client_id"]
+#     my_player = Player(start_data["players"][int(client_id)])
+#     if start_data["game message"] == "The Game Has Started":
+#         print("Enough players have joined, the game is now starting...")
+#         break
+#     time.sleep(0.1)
 
-print("The Game has Started! Goodluck!")
-print("****************************************************************************************")
-my_player.display_cards()
-print("****************************************************************************************")
+# print("The Game has Started! Goodluck!")
+# print("****************************************************************************************")
+# my_player.display_cards()
+# print("****************************************************************************************")
 
 # Playing game
 while True:
@@ -351,6 +609,12 @@ while True:
                 continue
 
     ######################################################################
+
+    # if client_id == str(int(current_player_index) - 1) or (int(client_id) - (game_data["number of players"] - 1)) == int(current_player_index):
+    #     pass
+    # else:
+    #     pass
+    #     # print(game_data["game status"])
 
     if client_id in game_data["kicked players"]:
         print("The game has ended since everyone except one player has made an incorrect accusation.")
