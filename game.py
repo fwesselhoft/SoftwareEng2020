@@ -327,11 +327,10 @@ def check_cards(player_cards, suspect, weapon, room):
     return options
 
 
-<<<<<<< HEAD
 # Print welcome message here 
 print("Welcome to ClueLess!")
 play_music() #added by Nayila 12/11
-=======
+
 def draw_cards(cards, manager):
     start_position = 250
     my_cards_rect = pygame.Rect(250, 560, 105, 35)
@@ -340,7 +339,6 @@ def draw_cards(cards, manager):
         pygame_gui.elements.UIImage(pygame.Rect(start_position, 600, 120, 140), pygame.image.load(card_paths[card]), manager)
         start_position += 130
 
->>>>>>> edd41d57bdddd5944f724180d9aa24100e4437e9
 
 def draw_my_player(player, manager):
     my_player_rect = pygame.Rect(50, 40, 105, 35)
